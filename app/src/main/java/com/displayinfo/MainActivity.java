@@ -1,11 +1,11 @@
 package com.displayinfo;
 
 import android.content.res.Resources;
-import android.graphics.Rect;
+import android.graphics.Point;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
-import android.view.Window;
 import android.widget.TextView;
 
 /**
@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setTitle("Display Info for " + Build.MODEL);
         this.mScreenSizeWidth = (TextView) findViewById(R.id.screen_size_width);
         this.mScreenSizeHeight = (TextView) findViewById(R.id.screen_size_height);
         this.mScreenSize = (TextView) findViewById(R.id.screen_size);
@@ -61,17 +62,23 @@ public class MainActivity extends AppCompatActivity {
          *  A structure describing general information about a display,
          *  such as its size, density, and font scaling.
          */
-
         DisplayMetrics dm = getResources().getDisplayMetrics();
+        Point realSize = new Point();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            getWindowManager().getDefaultDisplay().getRealSize(realSize);
+        } else {
+            realSize.x = dm.widthPixels;
+            realSize.y = dm.heightPixels;
+        }
         //获取屏幕尺寸
-        this.mScreenSizeWidth.setText(String.valueOf(((float) dm.widthPixels) / dm.xdpi));
-        this.mScreenSizeHeight.setText(String.valueOf(((float) dm.heightPixels) / dm.ydpi));
-        double x = Math.pow(dm.widthPixels / dm.xdpi, 2);
-        double y = Math.pow(dm.heightPixels / dm.ydpi, 2);
+        this.mScreenSizeWidth.setText(String.valueOf(((float) realSize.x) / dm.xdpi));
+        this.mScreenSizeHeight.setText(String.valueOf(((float) realSize.y) / dm.ydpi));
+        double x = Math.pow(realSize.x / dm.xdpi, 2);
+        double y = Math.pow(realSize.y / dm.ydpi, 2);
         this.mScreenSize.setText(String.valueOf(Math.sqrt(x + y)));
         //获取屏幕分辨率
-        this.mResolutionWidth.setText(String.valueOf(dm.widthPixels));
-        this.mResolutionHeight.setText(String.valueOf(dm.heightPixels));
+        this.mResolutionWidth.setText(String.valueOf(realSize.x));
+        this.mResolutionHeight.setText(String.valueOf(realSize.y));
         //物理像素
         this.mDPIWidth.setText(String.valueOf(dm.xdpi));
         this.mDPIHeight.setText(String.valueOf(dm.ydpi));
@@ -80,16 +87,16 @@ public class MainActivity extends AppCompatActivity {
 
         this.mDesity.setText(String.valueOf(dm.density));
 
-        float dipW = (((float) dm.widthPixels) * 160.0f) / ((float) dm.densityDpi);
-        float dipH = (((float) dm.heightPixels) * 160.0f) / ((float) dm.densityDpi);
+        float dipW = (((float) realSize.x) * 160.0f) / ((float) dm.densityDpi);
+        float dipH = (((float) realSize.y) * 160.0f) / ((float) dm.densityDpi);
         this.mDIPWidth.setText(String.valueOf(dipW));
         this.mDIPHeight.setText(String.valueOf(dipH));
 
-        this.mSuggestionLayout.setText("layout" + getSmallestWidthString((int) dipW, (int) dipH) + getResolutionString(dm.widthPixels, dm.heightPixels));
-        this.mSuggestionLayoutLand.setText("layout-land" + getSmallestWidthString((int) dipW, (int) dipH) + getResolutionString(dm.widthPixels, dm.heightPixels));
+        this.mSuggestionLayout.setText("layout" + getSmallestWidthString((int) dipW, (int) dipH) + getResolutionString(realSize.x, realSize.y));
+        this.mSuggestionLayoutLand.setText("layout-land" + getSmallestWidthString((int) dipW, (int) dipH) + getResolutionString(realSize.x, realSize.y));
         this.mSuggestionLayoutSimple.setText("layout" + getSmallestWidthString((int) dipW, (int) dipH));
-        this.mSuggestionValues.setText("values" + getSmallestWidthString((int) dipW, (int) dipH) + getResolutionString(dm.widthPixels, dm.heightPixels));
-        this.mSuggestionValuesLand.setText("values-land" + getSmallestWidthString((int) dipW, (int) dipH) + getResolutionString(dm.widthPixels, dm.heightPixels));
+        this.mSuggestionValues.setText("values" + getSmallestWidthString((int) dipW, (int) dipH) + getResolutionString(realSize.x, realSize.y));
+        this.mSuggestionValuesLand.setText("values-land" + getSmallestWidthString((int) dipW, (int) dipH) + getResolutionString(realSize.x, realSize.y));
         this.mSuggestionValuesSimple.setText("values" + getSmallestWidthString((int) dipW, (int) dipH));
 
         this.mStatusBaHheight.setText(String.valueOf(getStatusBarHeight()));
@@ -107,48 +114,16 @@ public class MainActivity extends AppCompatActivity {
 
     //获取状态栏的高度
     public int getStatusBarHeight() {
-        DisplayMetrics dm = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(dm);
-        int width = dm.widthPixels;  //屏幕宽
-        int height = dm.heightPixels;  //屏幕高
-        Rect frame = new Rect();
-        getWindow().getDecorView().getWindowVisibleDisplayFrame(frame);
-        int statusBarHeight = frame.top;  //状态栏高
-        int contentTop = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getTop();
-        int titleBarHeight = contentTop - statusBarHeight; //标题栏高
-
-        return titleBarHeight;
+        int statusBarHeight = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            statusBarHeight = getResources().getDimensionPixelSize(resourceId);
+        }
+        return statusBarHeight;
     }
 
     private String densityDpiToString(int densityDpi) {
-        String str;
-        switch (densityDpi) {
-            case 120:
-                str = "ldpi";
-                break;
-            case 160:
-                str = "mdpi";
-                break;
-            case 213:
-                str = "tvdpi";
-                break;
-            case 240:
-                str = "hdpi";
-                break;
-            case 320:
-                str = "xhdpi";
-                break;
-            case 480:
-                str = "xxhdpi";
-                break;
-            case 640:
-                str = "xxxhdpi";
-                break;
-            default:
-                str = "N/A";
-                break;
-        }
-        return densityDpi + " (" + str + ")";
+        return densityDpi + " (" + getString(R.string.dpi_suffix) + ")";
     }
 
     private String getResolutionString(int rw, int rh) {
